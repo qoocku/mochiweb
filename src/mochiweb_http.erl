@@ -169,14 +169,14 @@ new_request(Socket, Opts, Request, RevHeaders) ->
     ok = mochiweb_socket:exit_if_closed(mochiweb_socket:setopts(Socket, [{packet, raw}])),
     mochiweb:new_request({Socket, Opts, Request, lists:reverse(RevHeaders)}).
 
-after_response(Body, Req) ->
-    Socket = Req:get(socket),
-    case Req:should_close() of
+after_response(Body, Req = {Mod, _Args}) ->
+    Socket = Mod:get(socket, Req),
+    case Mod:should_close(Req) of
         true ->
             mochiweb_socket:close(Socket),
             exit(normal);
         false ->
-            Req:cleanup(),
+            Mod:cleanup(Req),
             erlang:garbage_collect(),
             ?MODULE:loop(Socket, mochiweb_request:get(opts, Req), Body)
     end.
